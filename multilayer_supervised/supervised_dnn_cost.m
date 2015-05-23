@@ -17,6 +17,20 @@ hAct = cell(numHidden+1, 1);
 gradStack = cell(numHidden+1, 1);
 %% forward prop
 %%% YOUR CODE HERE %%%
+%隐藏层
+for l = 1:numHidden
+    if(l == 1)
+        z = stack{l}.W * data;
+    else
+        z = stack{l}.W * hAct{l-1};
+    end
+    z = bsxfun(@plus,z,stack{l}.b);%%z:256*60000 b:256*1
+    hAct{l} = 1./(1+exp(-z));
+end
+%输出层
+h  = exp(bsxfun(@plus,stack{numHidden+1}.W * hAct{numHidden},stack{numHidden+1}.b));
+pred_prob = bsxfun(@rdivide,h,sum(h,1));
+hAct{numHidden+1} = pred_prob;%最后一层输出的实际上是预测的分类结果
 
 %% return here if only predictions desired.
 if po
