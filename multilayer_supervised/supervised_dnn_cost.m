@@ -63,7 +63,7 @@ for l = numHidden+1 : -1 :1
     else
         gradStack{l}.W = error * hAct{l-1}';
     end
-    error = (stack{l}.W)'*error .* hAct{l-1} .* (1-hAct{l-1});
+    error = (stack{l}.W)'*error .* hAct{l-1} .* (1-hAct{l-1});%此处的error对应是l-1层的error
 end
 
 %% compute weight penalty cost and gradient for non-bias terms
