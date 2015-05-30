@@ -20,7 +20,7 @@ function [cost, grad, preds] = cnnCost(theta,images,labels,numClasses,...
 %  cost       -  cross entropy cost
 %  grad       -  gradient with respect to theta (if pred==False)
 %  preds      -  list of predictions for each example (if pred==True)
-lambda = 0.001;
+lambda = 0.0001;
 
 if ~exist('pred','var')
     pred = false;
@@ -92,6 +92,8 @@ probs = zeros(numClasses,numImages);
 %%% YOUR CODE HERE %%%
 h = exp(bsxfun(@plus,Wd * activationsPooled,bd));
 probs = bsxfun(@rdivide,h,sum(h,1));
+
+
 %%======================================================================
 %% STEP 1b: Calculate Cost
 %  In this step you will use the labels given as input and the probs
@@ -105,7 +107,7 @@ logp = log(probs);
 index = sub2ind(size(logp),labels',1:size(probs,2));
 ceCost = -sum(logp(index));
 wCost = lambda/2 * (sum(Wd(:).^2)+sum(Wc(:).^2));
-cost = ceCost + wCost;
+cost = ceCost/numImages + wCost;
 
 % Makes predictions given probs and returns without backproagating errors.
 if pred
@@ -137,7 +139,7 @@ DeltaUnpool = zeros(convDim,convDim,numFilters,numImages);
 for imNum = 1:numImages
     for FilterNum = 1:numFilters
         unpool = DeltaPool(:,:,FilterNum,imNum);
-        DeltaUnpool(:,:,FilterNum,imNum) = kron(unpool,ones(poolDim))/(poolDim ^ 2);
+        DeltaUnpool(:,:,FilterNum,imNum) = kron(unpool,ones(poolDim))./(poolDim ^ 2);
     end
 end
 
@@ -151,15 +153,15 @@ DeltaConv = DeltaUnpool .* activations .* (1 - activations);
 %  for that filter with each image and aggregate over images.
 
 %%% YOUR CODE HERE %%%
-Wd_grad = DeltaSoftmax*activationsPooled'+lambda*Wd;
-bd_grad = sum(DeltaSoftmax,2);
+Wd_grad = (1./numImages) .* DeltaSoftmax*activationsPooled'+lambda*Wd;
+bd_grad = (1./numImages) .* sum(DeltaSoftmax,2);
 
 bc_grad = zeros(size(bc));
 Wc_grad = zeros(filterDim,filterDim,numFilters);
 
 for filterNum = 1:numFilters
     error = DeltaConv(:,:,filterNum,:);
-    bc_grad(filterNum) = sum(error(:));
+    bc_grad(filterNum) = (1./numImages) .* sum(error(:));
 end
 
 for filterNum = 1:numFilters
@@ -174,7 +176,7 @@ for filterNum = 1:numFilters
         Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + conv2(images(:,:,imNum),DeltaConv(:,:,filterNum,imNum),'valid');
     end
 end
-Wc_grad = Wc_grad + lambda*Wc;
+Wc_grad = (1./numImages) .* Wc_grad + lambda*Wc;
 
 %% Unroll gradient into grad vector for minFunc
 grad = [Wc_grad(:) ; Wd_grad(:) ; bc_grad(:) ; bd_grad(:)];
